@@ -110,7 +110,12 @@
 				<groupId>org.eluder.coveralls</groupId>
 				<artifactId>coveralls-maven-plugin</artifactId>
 				<version>3.2.1</version>
-			</plugin>
+				<configuration>
+	                <sourceEncoding>UTF-8</sourceEncoding>
+	                <serviceName>travis-ci</serviceName>
+	                <serviceJobId>${env.TRAVIS_JOB_ID} </serviceJobId>
+	            </configuration>
+            </plugin>
 			
 			<!-- Generate the project-javadoc.jar for OSS repository -->
 			<plugin>
