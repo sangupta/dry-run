@@ -22,7 +22,7 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 	
 	public OpsForValue(DryRunRedisTemplate<K, V> template) {
 		this.template = template;
-		this.mockJedis = this.template.mockJedis;
+		this.mockJedis = template.mockJedis;
 	}
 
 	@Override

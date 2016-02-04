@@ -1,5 +1,7 @@
 package com.sangupta.dryrun.redis;
 
+import java.util.Collection;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.RedisSerializer;
@@ -30,16 +32,34 @@ public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
 	
 	RedisSerializer<String> stringSerializer = new StringRedisSerializer();
 	
-	private final OpsForValue<K, V> opsForValue = new OpsForValue<K, V>(this);
+	private final OpsForValue<K, V> opsForValue;
 	
 	public DryRunRedisTemplate(MockJedis jedis) {
 		this.mockJedis = jedis;
+		opsForValue = new OpsForValue<K, V>(this);
 	}
+	
+	@Override
+	public void delete(K key) {
+		byte[] keyBytes = this.keySerializer.serialize(key);
+		this.mockJedis.del(keyBytes);
+	}
+
+	@Override
+	public void delete(Collection<K> keys) {
+		for(K key : keys) {
+			this.delete(key);
+		}
+	}
+	
+	// Usual getters that are meant for RedisTemplate options
 	
 	@Override
 	public ValueOperations<K, V> opsForValue() {
 		return this.opsForValue;
 	}
+	
+	// Usual setters
 	
 	@Override
 	@SuppressWarnings("unchecked")
@@ -57,5 +77,5 @@ public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
 	public void setStringSerializer(RedisSerializer<String> stringSerializer) {
 		this.stringSerializer = stringSerializer;
 	}
-
+	
 }
