@@ -40,6 +40,12 @@ public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
 	}
 	
 	@Override
+	public Boolean hasKey(K key) {
+		byte[] keyBytes = this.keySerializer.serialize(key);
+		return this.mockJedis.exists(keyBytes);
+	}
+	
+	@Override
 	public void delete(K key) {
 		byte[] keyBytes = this.keySerializer.serialize(key);
 		this.mockJedis.del(keyBytes);
