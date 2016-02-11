@@ -7,9 +7,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
@@ -18,11 +20,19 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSFile;
+import com.sangupta.jerry.util.AssertUtils;
 
 /**
  * An in-memory implementation of {@link GridFsOperations} or {@link GridFsTemplate}
  * that can be used during unit testing. Supports almost all operations.
- *  
+ * 
+ * Following operations are currently not supported:
+ * 
+ * 1. Boolean-Operators in find/delete in Query
+ * 2. Sorting in find
+ * 3. Regex is not supported
+ * 4. Mathematical-Operators in find/delete in Query
+ *   
  * @author sangupta
  *
  */
@@ -108,42 +118,44 @@ public class DryRunGridFSTemplate implements GridFsOperations {
 
 	@Override
 	public List<GridFSDBFile> find(Query query) {
-		if(query == null) {
-			if(this.files.isEmpty()) {
-				return new ArrayList<GridFSDBFile>();
-			}
-			
-			List<GridFSDBFile> list = new ArrayList<GridFSDBFile>();
-			
-			Collection<DryRunGridFSDBFile> files = this.files.values();
-			for(DryRunGridFSDBFile file : files) {
-				list.add(file);
-			}
-			
-			return list;
+		DBObject queryObject = null;
+		if(query != null) {
+			queryObject = query.getQueryObject();
 		}
 		
-		return null;
+		return this.findObjects(queryObject, -1);
 	}
 
 	@Override
 	public GridFSDBFile findOne(Query query) {
-		if(query == null) {
-			if(this.files.isEmpty()) {
-				return null;
-			}
-			
-			DryRunGridFSDBFile file = this.files.values().iterator().next();
-			return file;
+		DBObject queryObject = null;
+		if(query != null) {
+			queryObject = query.getQueryObject();
 		}
 		
-		return null;
+		List<GridFSDBFile> files = this.findObjects(queryObject, 1);
+		if(AssertUtils.isEmpty(files)) {
+			return null;
+		}
+		
+		return files.get(0);
 	}
 
 	@Override
 	public void delete(Query query) {
-		// TODO Auto-generated method stub
+		DBObject queryObject = null;
+		if(query != null) {
+			queryObject = query.getQueryObject();
+		}
 		
+		List<GridFSDBFile> files = this.findObjects(queryObject, 1);
+		if(AssertUtils.isEmpty(files)) {
+			return;
+		}
+		
+		for(GridFSDBFile file : files) {
+			this.files.remove(file.getFilename());
+		}
 	}
 
 	@Override
@@ -158,8 +170,89 @@ public class DryRunGridFSTemplate implements GridFsOperations {
 
 	@Override
 	public GridFsResource[] getResources(String filenamePattern) {
-		// TODO Auto-generated method stub
-		return null;
+		if(AssertUtils.isEmpty(filenamePattern)) {
+			return new GridFsResource[0];
+		}
+		
+		DryRunAntPath path = new DryRunAntPath(filenamePattern);
+
+		if (path.isPattern()) {
+			Query query = Query.query(Criteria.where("filename").regex(path.toRegex()));
+			List<GridFSDBFile> files = this.findObjects(query.getQueryObject(), -1);
+			List<GridFsResource> resources = new ArrayList<GridFsResource>(files.size());
+
+			for (GridFSDBFile file : files) {
+				resources.add(new GridFsResource(file));
+			}
+
+			return resources.toArray(new GridFsResource[resources.size()]);
+		}
+
+		return new GridFsResource[] { getResource(filenamePattern) };
+	}
+	
+	@SuppressWarnings("unchecked")
+	private List<GridFSDBFile> findObjects(DBObject matchingObject, int max) {
+		List<GridFSDBFile> found = new ArrayList<GridFSDBFile>();
+		
+		Map<String, Object> query = null;
+		if(matchingObject != null) {
+			query = matchingObject.toMap();
+		}
+		
+		boolean runMatch = AssertUtils.isNotEmpty(query);
+		
+		Collection<DryRunGridFSDBFile> currentFiles = this.files.values();
+		for(DryRunGridFSDBFile candidate : currentFiles) {
+			if(runMatch) {
+				// match candidate against matching map
+				if(match(query, candidate.getMetadata())) {
+					found.add(candidate);
+				}
+			} else {
+				found.add(candidate);
+			}
+			
+			if(found.size() == max) {
+				// break the for-loop as we found number of items we needed
+				break;
+			}
+		}
+		
+		return found;
+	}
+
+	/**
+	 * Match the query map with candidate map. All fields in query map should
+	 * match with candidate map.
+	 * 
+	 * @param query
+	 *            the map of query params. Can never be <code>null</code>
+	 * 
+	 * @param candidate
+	 *            the map of candidate object properties
+	 * 
+	 * @return <code>true</code> if all properties from query are present in
+	 *         candidate map and contain the same value, <code>false</code>
+	 *         otherwise
+	 */
+	private boolean match(Map<String, Object> query, Map<String, Object> candidate) {
+		Set<String> keySet = query.keySet();
+		
+		for(String key : keySet) {
+			if(key.startsWith("$")) {
+				throw new IllegalArgumentException("Query with operators is currently not supported");
+			}
+			
+			Object value = query.get(key);
+			Object candidateValue = candidate.get(key);
+			if(!value.equals(candidateValue)) {
+				return false;
+			}
+		}
+		
+		// all checks passed - we are good to go
+		return true;
 	}
 
 	private static byte[] readFully(InputStream content) {
@@ -173,5 +266,6 @@ public class DryRunGridFSTemplate implements GridFsOperations {
 			throw new RuntimeException(e);
 		}
 	}
+
 
 }

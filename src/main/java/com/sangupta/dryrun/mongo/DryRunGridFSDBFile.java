@@ -90,6 +90,10 @@ public class DryRunGridFSDBFile extends GridFSDBFile {
 		
 		this.metadata.put(HttpHeaderName.CONTENT_TYPE, contentType);
 	}
+	
+	public Map<String, Object> getMetadata() {
+		return metadata;
+	}
 
 	@Override
 	public boolean containsField(String fieldName) {
@@ -209,6 +213,7 @@ public class DryRunGridFSDBFile extends GridFSDBFile {
 		}
 		
 		// TODO: add filename and bytes to the right attribute
+		// and other necessary attributes
 		
 		return obj;
 	}
