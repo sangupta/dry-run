@@ -13,11 +13,19 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSFile;
 
+/**
+ * An in-memory implementation of {@link GridFsOperations} or {@link GridFsTemplate}
+ * that can be used during unit testing. Supports almost all operations.
+ *  
+ * @author sangupta
+ *
+ */
 public class DryRunGridFSTemplate implements GridFsOperations {
 	
 	private final Map<String, DryRunGridFSDBFile> files = new HashMap<String, DryRunGridFSDBFile>();  
