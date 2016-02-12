@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -246,6 +248,22 @@ public class DryRunGridFSTemplate implements GridFsOperations {
 			
 			Object value = query.get(key);
 			Object candidateValue = candidate.get(key);
+			
+			if(value instanceof Pattern) {
+				Pattern pattern = (Pattern) value;
+				Matcher matcher = pattern.matcher(candidateValue.toString());
+				if(matcher.find()) {
+					return true;
+				}
+				
+				return false;
+			}
+			
+			if(value instanceof DBObject) {
+				throw new IllegalArgumentException("Query with operators is currently not supported");
+			}
+
+			// normal object comparison for now
 			if(!value.equals(candidateValue)) {
 				return false;
 			}
@@ -266,6 +284,5 @@ public class DryRunGridFSTemplate implements GridFsOperations {
 			throw new RuntimeException(e);
 		}
 	}
-
 
 }
