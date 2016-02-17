@@ -38,9 +38,13 @@ import com.sangupta.jerry.util.AssertUtils;
  * @author sangupta
  *
  */
-public class DryRunGridFSTemplate implements GridFsOperations {
+public class DryRunGridFSTemplate extends GridFsTemplate {
 	
 	private final Map<String, DryRunGridFSDBFile> files = new HashMap<String, DryRunGridFSDBFile>();  
+	
+	public DryRunGridFSTemplate(String bucket) {
+		super(new DryRunMongoDBFactory(), new DryRunMongoConverter(), bucket);
+	}
 
 	@Override
 	public ClassLoader getClassLoader() {
@@ -114,6 +118,8 @@ public class DryRunGridFSTemplate implements GridFsOperations {
 		DryRunGridFSDBFile file = new DryRunGridFSDBFile(fileName, readFully(content));
 		file.setMetaData(metadata);
 		file.setContentType(contentType);
+		
+		this.files.put(fileName, file);
 		
 		return file;
 	}

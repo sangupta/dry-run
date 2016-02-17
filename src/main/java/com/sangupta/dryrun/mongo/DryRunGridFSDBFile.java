@@ -22,6 +22,7 @@ import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.util.JSON;
 import com.sangupta.jerry.constants.HttpHeaderName;
+import com.sangupta.jerry.util.AssertUtils;
 import com.sangupta.jerry.util.HashUtils;
 import com.sangupta.jerry.util.ReflectionUtils;
 
@@ -40,7 +41,7 @@ public class DryRunGridFSDBFile extends GridFSDBFile {
 	
 	private byte[] bytes;
 	
-	private Map<String, Object> metadata;
+	private final Map<String, Object> metadata = new HashMap<String, Object>();
 	
 	private Date uploadDate;
 	
@@ -52,6 +53,8 @@ public class DryRunGridFSDBFile extends GridFSDBFile {
 		this.bytes = bytes;
 		
 		this.uploadDate = new Date();
+		this.put("_id", this.id);
+		this.put("filename", this.fileName);
 	}
 
 	/**
@@ -64,7 +67,12 @@ public class DryRunGridFSDBFile extends GridFSDBFile {
 			return;
 		}
 		
-		this.metadata = ReflectionUtils.convertToMap(metadata, false);
+		Map<String, Object> map = ReflectionUtils.convertToMap(metadata, false);
+		if(AssertUtils.isEmpty(map)) {
+			return;
+		}
+		
+		this.metadata.putAll(map);
 	}
 	
 	public void setMetaData(DBObject metadata) {
@@ -74,20 +82,15 @@ public class DryRunGridFSDBFile extends GridFSDBFile {
 		
 		Set<String> keySet = metadata.keySet();
 		if(keySet.isEmpty()) {
-			this.metadata = null;
+			return;
 		}
 		
-		this.metadata = new HashMap<String, Object>();
 		for(String key : keySet) {
 			this.metadata.put(key, metadata.get(key));
 		}
 	}
 
 	public void setContentType(String contentType) {
-		if(this.metadata == null) {
-			this.metadata = new HashMap<String, Object>();
-		}
-		
 		this.metadata.put(HttpHeaderName.CONTENT_TYPE, contentType);
 	}
 	
