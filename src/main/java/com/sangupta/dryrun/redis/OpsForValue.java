@@ -31,48 +31,34 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.ValueOperations;
 
-import com.fiftyonred.mock_jedis.MockJedis;
-
 import redis.clients.jedis.Transaction;
 
-class OpsForValue<K, V> implements ValueOperations<K, V> {
-	
-	final DryRunRedisTemplate<K, V> template;
-	
-	final MockJedis mockJedis;
+class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOperations<K, V> {
 	
 	public OpsForValue(DryRunRedisTemplate<K, V> template) {
-		this.template = template;
-		this.mockJedis = template.mockJedis;
+		super(template);
 	}
 
 	@Override
 	public void set(K key, V value) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		byte[] valueBytes = this.template.valueSerializer.serialize(value);
-		this.mockJedis.set(keyBytes, valueBytes);
+		this.mockJedis.set(getKey(key), getValue(value));
 	}
 
 	@Override
 	public void set(K key, V value, long timeout, TimeUnit unit) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		byte[] valueBytes = this.template.valueSerializer.serialize(value);
-		
 		if(TimeUnit.MILLISECONDS.equals(unit)) {
 			int millis = ((Long) timeout).intValue();
-			this.mockJedis.psetex(keyBytes, millis, valueBytes);
+			this.mockJedis.psetex(getKey(key), millis, getValue(value));
 			return;
 		}
 		
 		Long seconds = unit.toSeconds(timeout);
-		this.mockJedis.setex(keyBytes, seconds.intValue(), valueBytes);
+		this.mockJedis.setex(getKey(key), seconds.intValue(), getValue(value));
 	}
 
 	@Override
 	public Boolean setIfAbsent(K key, V value) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		byte[] valueBytes = this.template.valueSerializer.serialize(value);
-		Long result = this.mockJedis.setnx(keyBytes, valueBytes);
+		Long result = this.mockJedis.setnx(getKey(key), getValue(value));
 		if(result != null && result > 0) {
 			return true;
 		}
@@ -87,10 +73,7 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 			K key = entry.getKey();
 			V value = entry.getValue();
 			
-			byte[] keyBytes = this.template.keySerializer.serialize(key);
-			byte[] valueBytes = this.template.valueSerializer.serialize(value);
-			
-			transaction.set(keyBytes, valueBytes);
+			transaction.set(getKey(key), getValue(value));
 		}
 		
 		transaction.exec();
@@ -103,10 +86,7 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 			K key = entry.getKey();
 			V value = entry.getValue();
 			
-			byte[] keyBytes = this.template.keySerializer.serialize(key);
-			byte[] valueBytes = this.template.valueSerializer.serialize(value);
-			
-			transaction.setnx(keyBytes, valueBytes);
+			transaction.setnx(getKey(key), getValue(value));
 		}
 		
 		transaction.exec();
@@ -121,8 +101,7 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 		if(key instanceof byte[]) {
 			result = this.mockJedis.get((byte[]) key);
 		} else {
-			byte[] keyBytes = this.template.keySerializer.serialize((K) key);
-			result = this.mockJedis.get(keyBytes);
+			result = this.mockJedis.get(getKey((K) key));
 		}
 		
 		return this.template.valueSerializer.deserialize(result);
@@ -130,9 +109,7 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 
 	@Override
 	public V getAndSet(K key, V value) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		byte[] valueBytes = this.template.valueSerializer.serialize(value);
-		byte[] result = this.mockJedis.getSet(keyBytes, valueBytes);
+		byte[] result = this.mockJedis.getSet(getKey(key), getValue(value));
 		
 		return this.template.valueSerializer.deserialize(result);
 	}
@@ -149,21 +126,17 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 
 	@Override
 	public Long increment(K key, long delta) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		return this.mockJedis.incrBy(keyBytes, delta);
+		return this.mockJedis.incrBy(getKey(key), delta);
 	}
 
 	@Override
 	public Double increment(K key, double delta) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		return this.mockJedis.incrByFloat(keyBytes, delta);
+		return this.mockJedis.incrByFloat(getKey(key), delta);
 	}
 
 	@Override
 	public Integer append(K key, String value) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		byte[] valueBytes = this.template.stringSerializer.serialize(value);
-		Long result = this.mockJedis.append(keyBytes, valueBytes);
+		Long result = this.mockJedis.append(getKey(key), getString(value));
 		if(result != null) {
 			return result.intValue();
 		}
@@ -173,22 +146,18 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 
 	@Override
 	public String get(K key, long start, long end) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		byte[] result = this.mockJedis.getrange(keyBytes, start, end);
+		byte[] result = this.mockJedis.getrange(getKey(key), start, end);
 		return this.template.stringSerializer.deserialize(result);
 	}
 
 	@Override
 	public void set(K key, V value, long offset) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		byte[] valueBytes = this.template.valueSerializer.serialize(value);
-		this.mockJedis.setrange(keyBytes, offset, valueBytes);
+		this.mockJedis.setrange(getKey(key), offset, getValue(value));
 	}
 
 	@Override
 	public Long size(K key) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		return this.mockJedis.strlen(keyBytes);
+		return this.mockJedis.strlen(getKey(key));
 	}
 
 	@Override
@@ -198,14 +167,12 @@ class OpsForValue<K, V> implements ValueOperations<K, V> {
 
 	@Override
 	public Boolean setBit(K key, long offset, boolean value) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		return this.mockJedis.setbit(keyBytes, offset, value);
+		return this.mockJedis.setbit(getKey(key), offset, value);
 	}
 
 	@Override
 	public Boolean getBit(K key, long offset) {
-		byte[] keyBytes = this.template.keySerializer.serialize(key);
-		return this.mockJedis.getbit(keyBytes, offset);
+		return this.mockJedis.getbit(getKey(key), offset);
 	}
 	
 }

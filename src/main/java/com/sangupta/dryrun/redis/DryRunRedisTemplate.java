@@ -23,7 +23,9 @@ package com.sangupta.dryrun.redis;
 
 import java.util.Collection;
 
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -55,9 +57,16 @@ public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
 	
 	private final OpsForValue<K, V> opsForValue;
 	
+	private final OpsForSet<K, V> opsForSet;
+	
+	private final OpsForList<K, V> opsForList;
+	
 	public DryRunRedisTemplate(MockJedis jedis) {
 		this.mockJedis = jedis;
-		opsForValue = new OpsForValue<K, V>(this);
+		
+		this.opsForValue = new OpsForValue<K, V>(this);
+		this.opsForSet = new OpsForSet<K, V>(this);
+		this.opsForList = new OpsForList<K, V>(this);
 	}
 	
 	@Override
@@ -84,6 +93,16 @@ public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
 	@Override
 	public ValueOperations<K, V> opsForValue() {
 		return this.opsForValue;
+	}
+	
+	@Override
+	public SetOperations<K, V> opsForSet() {
+		return this.opsForSet;
+	}
+	
+	@Override
+	public ListOperations<K, V> opsForList() {
+		return this.opsForList;
 	}
 	
 	// Usual setters
