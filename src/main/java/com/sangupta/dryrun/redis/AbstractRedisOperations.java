@@ -3,6 +3,7 @@ package com.sangupta.dryrun.redis;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.fiftyonred.mock_jedis.MockJedis;
 
@@ -62,4 +63,9 @@ abstract class AbstractRedisOperations<K, V> {
 		return array;
 	}
 
+	int asIntSeconds(long timeout, TimeUnit unit) {
+		Long value = unit.toSeconds(timeout);
+		return value.intValue();
+	}
+	
 }

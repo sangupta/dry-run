@@ -7,6 +7,8 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisOperations;
 
+import redis.clients.jedis.BinaryClient.LIST_POSITION;
+
 class OpsForList<K, V> extends AbstractRedisOperations<K, V> implements ListOperations<K, V> {
 	
 	public OpsForList(DryRunRedisTemplate<K, V> template) {
@@ -50,8 +52,7 @@ class OpsForList<K, V> extends AbstractRedisOperations<K, V> implements ListOper
 
 	@Override
 	public Long leftPush(K key, V pivot, V value) {
-		// TODO Auto-generated method stub
-		return null;
+		return this.mockJedis.linsert(getKey(key), LIST_POSITION.BEFORE, getValue(pivot), getValue(value));
 	}
 
 	@Override
@@ -76,8 +77,7 @@ class OpsForList<K, V> extends AbstractRedisOperations<K, V> implements ListOper
 
 	@Override
 	public Long rightPush(K key, V pivot, V value) {
-		// TODO Auto-generated method stub
-		return null;
+		return this.mockJedis.linsert(getKey(key), LIST_POSITION.AFTER, getValue(pivot), getValue(value));
 	}
 
 	@Override
@@ -107,7 +107,12 @@ class OpsForList<K, V> extends AbstractRedisOperations<K, V> implements ListOper
 
 	@Override
 	public V leftPop(K key, long timeout, TimeUnit unit) {
-		return null;
+		List<V> values = this.asList(this.mockJedis.blpop(this.asIntSeconds(timeout, unit), getKey(key)));
+		if(values == null || values.isEmpty()) {
+			return null;
+		}
+		
+		return values.get(0);
 	}
 
 	@Override
@@ -117,19 +122,22 @@ class OpsForList<K, V> extends AbstractRedisOperations<K, V> implements ListOper
 
 	@Override
 	public V rightPop(K key, long timeout, TimeUnit unit) {
-		return null;
+		List<V> values = this.asList(this.mockJedis.brpop(this.asIntSeconds(timeout, unit), getKey(key)));
+		if(values == null || values.isEmpty()) {
+			return null;
+		}
+		
+		return values.get(0);
 	}
 
 	@Override
 	public V rightPopAndLeftPush(K sourceKey, K destinationKey) {
-		// TODO Auto-generated method stub
-		return null;
+		return this.toValue(this.mockJedis.rpoplpush(getKey(sourceKey), getKey(destinationKey)));
 	}
 
 	@Override
 	public V rightPopAndLeftPush(K sourceKey, K destinationKey, long timeout, TimeUnit unit) {
-		// TODO Auto-generated method stub
-		return null;
+		return this.toValue(this.mockJedis.brpoplpush(getKey(sourceKey), getKey(destinationKey), this.asIntSeconds(timeout, unit)));
 	}
 
 	@Override
