@@ -32,8 +32,6 @@ import org.springframework.data.redis.core.SetOperations;
 
 import com.sangupta.jerry.exceptions.NotImplementedException;
 
-import redis.clients.jedis.ScanResult;
-
 /**
  * Set operations for {@link DryRunRedisTemplate}.
  * 
