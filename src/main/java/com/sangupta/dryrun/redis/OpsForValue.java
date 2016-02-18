@@ -33,6 +33,14 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import redis.clients.jedis.Transaction;
 
+/**
+ * Value operations for {@link DryRunRedisTemplate}.
+ * 
+ * @author sangupta
+ *
+ * @param <K>
+ * @param <V>
+ */
 class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOperations<K, V> {
 	
 	public OpsForValue(DryRunRedisTemplate<K, V> template) {
@@ -41,24 +49,24 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public void set(K key, V value) {
-		this.mockJedis.set(getKey(key), getValue(value));
+		this.mockJedis.set(rawKey(key), rawValue(value));
 	}
 
 	@Override
 	public void set(K key, V value, long timeout, TimeUnit unit) {
 		if(TimeUnit.MILLISECONDS.equals(unit)) {
 			int millis = ((Long) timeout).intValue();
-			this.mockJedis.psetex(getKey(key), millis, getValue(value));
+			this.mockJedis.psetex(rawKey(key), millis, rawValue(value));
 			return;
 		}
 		
 		Long seconds = unit.toSeconds(timeout);
-		this.mockJedis.setex(getKey(key), seconds.intValue(), getValue(value));
+		this.mockJedis.setex(rawKey(key), seconds.intValue(), rawValue(value));
 	}
 
 	@Override
 	public Boolean setIfAbsent(K key, V value) {
-		Long result = this.mockJedis.setnx(getKey(key), getValue(value));
+		Long result = this.mockJedis.setnx(rawKey(key), rawValue(value));
 		if(result != null && result > 0) {
 			return true;
 		}
@@ -73,7 +81,7 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 			K key = entry.getKey();
 			V value = entry.getValue();
 			
-			transaction.set(getKey(key), getValue(value));
+			transaction.set(rawKey(key), rawValue(value));
 		}
 		
 		transaction.exec();
@@ -86,7 +94,7 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 			K key = entry.getKey();
 			V value = entry.getValue();
 			
-			transaction.setnx(getKey(key), getValue(value));
+			transaction.setnx(rawKey(key), rawValue(value));
 		}
 		
 		transaction.exec();
@@ -101,7 +109,7 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 		if(key instanceof byte[]) {
 			result = this.mockJedis.get((byte[]) key);
 		} else {
-			result = this.mockJedis.get(getKey((K) key));
+			result = this.mockJedis.get(rawKey((K) key));
 		}
 		
 		return this.template.valueSerializer.deserialize(result);
@@ -109,7 +117,7 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public V getAndSet(K key, V value) {
-		byte[] result = this.mockJedis.getSet(getKey(key), getValue(value));
+		byte[] result = this.mockJedis.getSet(rawKey(key), rawValue(value));
 		
 		return this.template.valueSerializer.deserialize(result);
 	}
@@ -126,17 +134,17 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public Long increment(K key, long delta) {
-		return this.mockJedis.incrBy(getKey(key), delta);
+		return this.mockJedis.incrBy(rawKey(key), delta);
 	}
 
 	@Override
 	public Double increment(K key, double delta) {
-		return this.mockJedis.incrByFloat(getKey(key), delta);
+		return this.mockJedis.incrByFloat(rawKey(key), delta);
 	}
 
 	@Override
 	public Integer append(K key, String value) {
-		Long result = this.mockJedis.append(getKey(key), getString(value));
+		Long result = this.mockJedis.append(rawKey(key), getString(value));
 		if(result != null) {
 			return result.intValue();
 		}
@@ -146,18 +154,18 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public String get(K key, long start, long end) {
-		byte[] result = this.mockJedis.getrange(getKey(key), start, end);
+		byte[] result = this.mockJedis.getrange(rawKey(key), start, end);
 		return this.template.stringSerializer.deserialize(result);
 	}
 
 	@Override
 	public void set(K key, V value, long offset) {
-		this.mockJedis.setrange(getKey(key), offset, getValue(value));
+		this.mockJedis.setrange(rawKey(key), offset, rawValue(value));
 	}
 
 	@Override
 	public Long size(K key) {
-		return this.mockJedis.strlen(getKey(key));
+		return this.mockJedis.strlen(rawKey(key));
 	}
 
 	@Override
@@ -167,12 +175,12 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public Boolean setBit(K key, long offset, boolean value) {
-		return this.mockJedis.setbit(getKey(key), offset, value);
+		return this.mockJedis.setbit(rawKey(key), offset, value);
 	}
 
 	@Override
 	public Boolean getBit(K key, long offset) {
-		return this.mockJedis.getbit(getKey(key), offset);
+		return this.mockJedis.getbit(rawKey(key), offset);
 	}
 	
 }

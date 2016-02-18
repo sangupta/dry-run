@@ -13,9 +13,11 @@ the usual connection.
 Features
 --------
 
-* Mocked implementation to `RedisTemplate` using `MockJedis`
-
-Currently only the operations for values are available. Operations on sets/lists/... are still pending.
+* Mocked implementation to `RedisTemplate` using `MockJedis`. Following are supported:
+  * Value operations
+  * List operations
+  * Set operations except `sscan`
+* Mocked implementation to `GridFSTemplate` using in-memory storage.
 
 Usage
 -----
