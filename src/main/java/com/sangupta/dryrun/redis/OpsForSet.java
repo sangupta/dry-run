@@ -48,118 +48,122 @@ class OpsForSet<K, V> extends AbstractRedisOperations<K, V> implements SetOperat
 
 	@Override
 	public Set<V> difference(K key, K otherKey) {
-		return this.asValuesSet(this.mockJedis.sdiff(rawKey(key), rawKey(otherKey)));
+		return this.asValuesSet(this.bridge.sdiff(rawKey(key), rawKey(otherKey)));
 	}
 
 	@Override
 	public Set<V> difference(K key, Collection<K> otherKeys) {
-		return this.asValuesSet(this.mockJedis.sdiff(this.rawKeys(key, otherKeys)));
+		return this.asValuesSet(this.bridge.sdiff(rawKey(key), this.asKeyArray(otherKeys)));
 	}
 
 	@Override
 	public Long differenceAndStore(K key, K otherKey, K destKey) {
-		return this.mockJedis.sdiffstore(rawKey(destKey), rawKeys(key, otherKey));
+		long l = this.bridge.sdiffstore(rawKey(destKey), rawKey(key), rawKey(otherKey));
+		return l;
 	}
 
 	@Override
 	public Long differenceAndStore(K key, Collection<K> otherKeys, K destKey) {
-		return this.mockJedis.sdiffstore(rawKey(destKey), rawKeys(key, otherKeys));
+		long l = this.bridge.sdiffstore(rawKey(destKey), rawKey(key), this.asKeyArray(otherKeys));
+		return l;
 	}
 
 	@Override
 	public Set<V> intersect(K key, K otherKey) {
-		return this.asValuesSet(this.mockJedis.sinter(rawKey(key), rawKey(otherKey)));
+		return this.asValuesSet(this.bridge.sinter(rawKey(key), rawKey(otherKey)));
 	}
 
 	@Override
 	public Set<V> intersect(K key, Collection<K> otherKeys) {
-		return this.asValuesSet(this.mockJedis.sinter(rawKeys(key, otherKeys)));
+		return this.asValuesSet(this.bridge.sinter(rawKey(key), this.asKeyArray(otherKeys)));
 	}
 
 	@Override
 	public Long intersectAndStore(K key, K otherKey, K destKey) {
-		return this.mockJedis.sinterstore(rawKey(destKey), rawKeys(key, otherKey));
+		long l = this.bridge.sinterstore(rawKey(destKey), rawKey(key), this.rawKey(otherKey));
+		return l;
 	}
 
 	@Override
 	public Long intersectAndStore(K key, Collection<K> otherKeys, K destKey) {
-		return this.mockJedis.sinterstore(rawKey(destKey), rawKeys(key, otherKeys));
+		long l = this.bridge.sinterstore(rawKey(destKey), rawKey(key), this.asKeyArray(otherKeys));
+		return l;
 	}
 
 	@Override
 	public Set<V> union(K key, K otherKey) {
-		return this.asValuesSet(this.mockJedis.sunion(rawKey(key), rawKey(otherKey)));
+		return this.asValuesSet(this.bridge.sunion(rawKey(key), rawKey(otherKey)));
 	}
 
 	@Override
 	public Set<V> union(K key, Collection<K> otherKeys) {
-		return this.asValuesSet(this.mockJedis.sunion(rawKeys(key, otherKeys)));
+		return this.asValuesSet(this.bridge.sunion(rawKey(key), this.asKeyArray(otherKeys)));
 	}
 
 	@Override
 	public Long unionAndStore(K key, K otherKey, K destKey) {
-		return this.mockJedis.sunionstore(rawKey(destKey), rawKeys(key, otherKey));
+		long l = this.bridge.sunionstore(rawKey(destKey), rawKey(key), rawKey(otherKey));
+		return l;
 	}
 
 	@Override
 	public Long unionAndStore(K key, Collection<K> otherKeys, K destKey) {
-		return this.mockJedis.sunionstore(rawKey(destKey), rawKeys(key, otherKeys));
+		long l = this.bridge.sunionstore(rawKey(destKey), rawKey(key), this.asKeyArray(otherKeys));
+		return l;
 	}
 
 	@Override
 	public Long add(K key, V... values) {
-		return this.mockJedis.sadd(rawKey(key), rawValues(values));
+		long l = this.bridge.sadd(rawKey(key), this.asList(values));
+		return l;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public Boolean isMember(K key, Object value) {
-		return this.mockJedis.sismember(rawKey(key), rawValue((V) value));
+		return this.asBoolean(this.bridge.sismember(rawKey(key), rawValue((V) value)));
 	}
 
 	@Override
 	public Set<V> members(K key) {
-		return this.asValuesSet(this.mockJedis.smembers(rawKey(key)));
+		return this.asValuesSet(this.bridge.smembers(rawKey(key)));
 	}
 
 	@Override
 	public Boolean move(K key, V value, K destKey) {
-		Long result = this.mockJedis.smove(rawKey(destKey), rawKey(destKey), rawValue(value));
-		if(result == null) {
-			return null;
-		}
-		
-		return result == 1;
+		return this.asBoolean(this.bridge.smove(rawKey(destKey), rawKey(destKey), rawValue(value)));
 	}
 
 	@Override
 	public V randomMember(K key) {
-		return this.asValue(this.mockJedis.srandmember(rawKey(key)));
+		return this.asValue(this.bridge.srandmember(rawKey(key)));
 	}
 
 	@Override
 	public Set<V> distinctRandomMembers(K key, long count) {
-		return this.asValuesSet(this.mockJedis.srandmember(rawKey(key), this.asInt(count)));
+		return this.asValuesSet(this.bridge.srandmember(rawKey(key), this.asInt(count)));
 	}
 
 	@Override
 	public List<V> randomMembers(K key, long count) {
-		return this.asValuesList(this.mockJedis.srandmember(rawKey(key), this.asInt(-count)));
+		return this.asValuesList(this.bridge.srandmember(rawKey(key), this.asInt(-count)));
 	}
 
 	@Override
 	public Long remove(K key, Object... values) {
-		return this.mockJedis.srem(rawKey(key), rawValues(values));
+		long l = this.bridge.srem(rawKey(key), rawValues(values));
+		return l;
 	}
 
 	@Override
 	public V pop(K key) {
-		return this.asValue(this.mockJedis.spop(rawKey(key)));
+		return this.asValue(this.bridge.spop(rawKey(key)));
 	}
 
 	@Override
 	public Long size(K key) {
-		return this.mockJedis.scard(rawKey(key));
+		long l = this.bridge.scard(rawKey(key));
+		return l;
 	}
 
 	@Override

@@ -25,13 +25,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.ValueOperations;
 
-import redis.clients.jedis.Transaction;
+import com.sangupta.jerry.exceptions.NotImplementedException;
 
 /**
  * Value operations for {@link DryRunRedisTemplate}.
@@ -49,25 +48,25 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public void set(K key, V value) {
-		this.mockJedis.set(rawKey(key), rawValue(value));
+		this.bridge.set(rawKey(key), rawValue(value));
 	}
 
 	@Override
 	public void set(K key, V value, long timeout, TimeUnit unit) {
 		if(TimeUnit.MILLISECONDS.equals(unit)) {
 			int millis = ((Long) timeout).intValue();
-			this.mockJedis.psetex(rawKey(key), millis, rawValue(value));
+			this.bridge.psetex(rawKey(key), millis, rawValue(value));
 			return;
 		}
 		
 		Long seconds = unit.toSeconds(timeout);
-		this.mockJedis.setex(rawKey(key), seconds.intValue(), rawValue(value));
+		this.bridge.setex(rawKey(key), seconds.intValue(), rawValue(value));
 	}
 
 	@Override
 	public Boolean setIfAbsent(K key, V value) {
-		Long result = this.mockJedis.setnx(rawKey(key), rawValue(value));
-		if(result != null && result > 0) {
+		String result = this.bridge.setnx(rawKey(key), rawValue(value));
+		if(result == null) {
 			return true;
 		}
 		
@@ -76,50 +75,53 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public void multiSet(Map<? extends K, ? extends V> map) {
-		Transaction transaction = this.mockJedis.multi();
-		for(Entry<? extends K, ? extends V> entry : map.entrySet()) {
-			K key = entry.getKey();
-			V value = entry.getValue();
-			
-			transaction.set(rawKey(key), rawValue(value));
-		}
-		
-		transaction.exec();
+//		Transaction transaction = this.bridge.multi();
+//		for(Entry<? extends K, ? extends V> entry : map.entrySet()) {
+//			K key = entry.getKey();
+//			V value = entry.getValue();
+//			
+//			transaction.set(rawKey(key), rawValue(value));
+//		}
+//		
+//		transaction.exec();
+	    throw new NotImplementedException();
 	}
 
 	@Override
 	public Boolean multiSetIfAbsent(Map<? extends K, ? extends V> map) {
-		Transaction transaction = this.mockJedis.multi();
-		for(Entry<? extends K, ? extends V> entry : map.entrySet()) {
-			K key = entry.getKey();
-			V value = entry.getValue();
-			
-			transaction.setnx(rawKey(key), rawValue(value));
-		}
-		
-		transaction.exec();
-		
-		return true;
+//		Transaction transaction = this.brid.multi();
+//		for(Entry<? extends K, ? extends V> entry : map.entrySet()) {
+//			K key = entry.getKey();
+//			V value = entry.getValue();
+//			
+//			transaction.setnx(rawKey(key), rawValue(value));
+//		}
+//		
+//		transaction.exec();
+//		
+//		return true;
+	    throw new NotImplementedException();
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public V get(Object key) {
-		byte[] result;
+		String result;
 		if(key instanceof byte[]) {
-			result = this.mockJedis.get((byte[]) key);
+			result = this.bridge.get((byte[]) key);
 		} else {
-			result = this.mockJedis.get(rawKey((K) key));
+			result = this.bridge.get(rawKey((K) key));
 		}
 		
-		return this.template.valueSerializer.deserialize(result);
+		byte[] bytes = result.getBytes();
+		return this.template.valueSerializer.deserialize(bytes);
 	}
 
 	@Override
 	public V getAndSet(K key, V value) {
-		byte[] result = this.mockJedis.getSet(rawKey(key), rawValue(value));
-		
-		return this.template.valueSerializer.deserialize(result);
+		String result = this.bridge.getset(rawKey(key), rawValue(value));
+		byte[] bytes = result.getBytes();
+		return this.template.valueSerializer.deserialize(bytes);
 	}
 
 	@Override
@@ -134,38 +136,35 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public Long increment(K key, long delta) {
-		return this.mockJedis.incrBy(rawKey(key), delta);
+		return this.bridge.incrby(rawKey(key), delta);
 	}
 
 	@Override
 	public Double increment(K key, double delta) {
-		return this.mockJedis.incrByFloat(rawKey(key), delta);
+		return this.bridge.incrbyfloat(rawKey(key), delta);
 	}
 
 	@Override
 	public Integer append(K key, String value) {
-		Long result = this.mockJedis.append(rawKey(key), getString(value));
-		if(result != null) {
-			return result.intValue();
-		}
-		
-		return null;
+		return this.bridge.append(rawKey(key), getString(value));
 	}
 
 	@Override
 	public String get(K key, long start, long end) {
-		byte[] result = this.mockJedis.getrange(rawKey(key), start, end);
-		return this.template.stringSerializer.deserialize(result);
+		String result = this.bridge.getrange(rawKey(key), start, end);
+		byte[] bytes = result.getBytes();
+		return this.template.stringSerializer.deserialize(bytes);
 	}
 
 	@Override
 	public void set(K key, V value, long offset) {
-		this.mockJedis.setrange(rawKey(key), offset, rawValue(value));
+		this.bridge.setrange(rawKey(key), offset, rawValue(value));
 	}
 
 	@Override
 	public Long size(K key) {
-		return this.mockJedis.strlen(rawKey(key));
+		long l = this.bridge.strlen(rawKey(key));
+		return l;
 	}
 
 	@Override
@@ -175,12 +174,12 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 
 	@Override
 	public Boolean setBit(K key, long offset, boolean value) {
-		return this.mockJedis.setbit(rawKey(key), offset, value);
+		return this.bridge.setbit(rawKey(key), offset, value);
 	}
 
 	@Override
 	public Boolean getBit(K key, long offset) {
-		return this.mockJedis.getbit(rawKey(key), offset);
+		return this.bridge.getbit(rawKey(key), offset);
 	}
 	
 }

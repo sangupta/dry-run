@@ -53,6 +53,13 @@
 	<prerequisites>
         <maven>3.0.0</maven>
     </prerequisites>
+    
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
 	<dependencies>
 		<dependency>
@@ -69,14 +76,13 @@
 		    <version>1.6.2.RELEASE</version>
 		    <scope>provided</scope>
 		</dependency>
-		<dependency>
-		    <groupId>com.fiftyonred</groupId>
-		    <artifactId>mock-jedis</artifactId>
-		    <version>0.4.0</version>
-		    <type>jar</type>
-		    <scope>provided</scope>
-		</dependency>
-		
+        <dependency>
+            <groupId>com.github.sangupta</groupId>
+            <artifactId>dry-redis</artifactId>
+            <version>-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+    		
 		<!-- for gridfs template -->
 		<dependency>
 			<groupId>org.springframework.data</groupId>

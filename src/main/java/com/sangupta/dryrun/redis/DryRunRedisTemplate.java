@@ -23,6 +23,8 @@ package com.sangupta.dryrun.redis;
 
 import java.util.Collection;
 
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.HyperLogLogOperations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
@@ -30,7 +32,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import com.fiftyonred.mock_jedis.MockJedis;
+import com.sangupta.dryredis.DryRedis;
 
 /**
  * An implementation of the {@link RedisTemplate} that uses {@link MockJedis} to
@@ -46,8 +48,10 @@ import com.fiftyonred.mock_jedis.MockJedis;
  *            the type of values to be stored in redis
  */
 public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
-	
-	final MockJedis mockJedis;
+    
+    final DryRedis dryRedis;
+    
+    final DryRedisBridge bridge;
 	
 	RedisSerializer<K> keySerializer;
 	
@@ -61,24 +65,28 @@ public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
 	
 	private final OpsForList<K, V> opsForList;
 	
-	public DryRunRedisTemplate(MockJedis jedis) {
-		this.mockJedis = jedis;
-		
+	private final OpsForHyperLogLog<K, V> opsForHyperLogLog;
+	
+	public DryRunRedisTemplate(DryRedis dryRedis) {
+	    this.dryRedis = dryRedis;
+	    this.bridge = new DryRedisBridge(dryRedis);
+	    
 		this.opsForValue = new OpsForValue<K, V>(this);
 		this.opsForSet = new OpsForSet<K, V>(this);
 		this.opsForList = new OpsForList<K, V>(this);
+		this.opsForHyperLogLog = new OpsForHyperLogLog<K, V>(this);
 	}
 	
 	@Override
 	public Boolean hasKey(K key) {
 		byte[] keyBytes = this.keySerializer.serialize(key);
-		return this.mockJedis.exists(keyBytes);
+		return this.bridge.exists(keyBytes);
 	}
 	
 	@Override
 	public void delete(K key) {
 		byte[] keyBytes = this.keySerializer.serialize(key);
-		this.mockJedis.del(keyBytes);
+		this.bridge.del(keyBytes);
 	}
 
 	@Override
@@ -103,6 +111,17 @@ public class DryRunRedisTemplate<K, V> extends RedisTemplate<K, V> {
 	@Override
 	public ListOperations<K, V> opsForList() {
 		return this.opsForList;
+	}
+	
+	@Override
+	public HyperLogLogOperations<K, V> opsForHyperLogLog() {
+		return this.opsForHyperLogLog;
+	}
+	
+	@Override
+	public <HK, HV> HashOperations<K, HK, HV> opsForHash() {
+		// TODO Auto-generated method stub
+		return super.opsForHash();
 	}
 	
 	// Usual setters

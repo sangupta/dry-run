@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.fiftyonred.mock_jedis.MockJedis;
+import com.sangupta.dryredis.DryRedis;
 
 /**
  * Common/Utility operations for {@link DryRunRedisTemplate}.
@@ -42,11 +42,14 @@ abstract class AbstractRedisOperations<K, V> {
 
 	final DryRunRedisTemplate<K, V> template;
 	
-	final MockJedis mockJedis;
+	final DryRedis dryRedis;
+	
+	final DryRedisBridge bridge;
 
 	AbstractRedisOperations(DryRunRedisTemplate<K, V> template) {
 		this.template = template;
-		this.mockJedis = template.mockJedis;
+		this.dryRedis = template.dryRedis;
+		this.bridge = new DryRedisBridge(dryRedis);
 	}
 
 	byte[] rawKey(K key) {
@@ -56,15 +59,23 @@ abstract class AbstractRedisOperations<K, V> {
 	byte[] rawValue(V value) {
 		return this.template.valueSerializer.serialize(value);
 	}
+	
+	boolean asBoolean(int value) {
+	    if(value == 1) {
+	        return true;
+	    }
+	    
+	    return false;
+	}
 
 	@SuppressWarnings("unchecked")
-	byte[][] rawValues(Object... values) {
-		final byte[][] rawValues = new byte[values.length][];
-		int i = 0;
+	List<byte[]> rawValues(Object... values) {
+		final List<byte[]> list = new ArrayList<byte[]>();
 		for (Object value : values) {
-			rawValues[i++] = rawValue((V) value);
+			list.add(rawValue((V) value));
 		}
-		return rawValues;
+		
+		return list;
 	}
 
 	byte[] getString(String str) {
@@ -74,10 +85,16 @@ abstract class AbstractRedisOperations<K, V> {
 	V asValue(byte[] bytes) {
 		return this.template.valueSerializer.deserialize(bytes);
 	}
+	
+	V asValue(String value) {
+	    byte[] bytes = value.getBytes();
+        return this.template.valueSerializer.deserialize(bytes);
+    }
 
-	List<V> asValuesList(List<byte[]> bytes) {
+	List<V> asValuesList(List<String> bytes) {
 		List<V> result = new ArrayList<V>();
-		for(byte[] bs : bytes) {
+		for(String str : bytes) {
+		    byte[] bs = str.getBytes();
 			result.add(this.template.valueSerializer.deserialize(bs));
 		}
 		
@@ -94,6 +111,16 @@ abstract class AbstractRedisOperations<K, V> {
 		return array;
 	}
 	
+	byte[][] asKeyArray(Collection<K> values) {
+        byte[][] array = new byte[values.size()][];
+        int index = 0;
+        for(K value : values) {
+            array[index++] = rawKey(value);
+        }
+        
+        return array;
+    }
+	
 	byte[][] asArray(Collection<V> values) {
 		byte[][] array = new byte[values.size()][];
 		int index = 0;
@@ -103,28 +130,47 @@ abstract class AbstractRedisOperations<K, V> {
 		
 		return array;
 	}
+	
+	List<byte[]> asList(Collection<V> values) {
+        List<byte[]> list = new ArrayList<byte[]>();
+        for(V value : values) {
+            list.add(rawValue(value));
+        }
+        
+        return list;
+    }
+	
+	List<byte[]> asList(V... values) {
+        List<byte[]> list = new ArrayList<byte[]>();
+        for(V value : values) {
+            list.add(rawValue(value));
+        }
+        
+        return list;
+    }
 
 	int asIntSeconds(long timeout, TimeUnit unit) {
 		Long value = unit.toSeconds(timeout);
 		return value.intValue();
 	}
 	
-	Set<V> asValuesSet(Collection<byte[]> sdiff) {
-		if(sdiff == null) {
-			return null;
-		}
-		
-		Set<V> set = new HashSet<V>();
-		if(sdiff.isEmpty()) {
-			return set;
-		}
-		
-		for(byte[] bytes : sdiff) {
-			set.add(this.asValue(bytes));
-		}
-		
-		return set;
-	}
+	Set<V> asValuesSet(Collection<String> sdiff) {
+        if(sdiff == null) {
+            return null;
+        }
+        
+        Set<V> set = new HashSet<V>();
+        if(sdiff.isEmpty()) {
+            return set;
+        }
+        
+        for(String value : sdiff) {
+            byte[] bytes = value.getBytes();
+            set.add(this.asValue(bytes));
+        }
+        
+        return set;
+    }
 
 	byte[][] rawKeys(K key, Collection<K> keys) {
 		final byte[][] rawKeys = new byte[keys.size() + (key != null ? 1 : 0)][];

@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisOperations;
 
-import redis.clients.jedis.BinaryClient.LIST_POSITION;
+import com.sangupta.dryredis.support.DryRedisInsertOrder;
 
 /**
  * List operations for {@link DryRunRedisTemplate}.
@@ -46,127 +46,130 @@ class OpsForList<K, V> extends AbstractRedisOperations<K, V> implements ListOper
 
 	@Override
 	public List<V> range(K key, long start, long end) {
-		return this.asValuesList(this.mockJedis.lrange(rawKey(key), start, end));
+		return this.asValuesList(this.bridge.lrange(rawKey(key), start, end));
 	}
 
 	@Override
 	public void trim(K key, long start, long end) {
-		this.mockJedis.ltrim(rawKey(key), start, end);
+		this.bridge.ltrim(rawKey(key), start, end);
 	}
 
 	@Override
 	public Long size(K key) {
-		return this.mockJedis.llen(rawKey(key));
+		long l = this.bridge.llen(rawKey(key));
+		return l;
 	}
 
 	@Override
 	public Long leftPush(K key, V value) {
-		return this.mockJedis.lpush(rawKey(key), rawValue(value));
+		long l = this.bridge.lpush(rawKey(key), rawValue(value));
+		return l;
 	}
 
 	@Override
 	public Long leftPushAll(K key, V... values) {
-		return this.mockJedis.lpush(rawKey(key), this.asArray(values));
+		long l = this.bridge.lpush(rawKey(key), this.asList(values));
+		return l;
 	}
 
 	@Override
 	public Long leftPushAll(K key, Collection<V> values) {
-		return this.mockJedis.lpush(rawKey(key), this.asArray(values));
+		long l = this.bridge.lpush(rawKey(key), this.asList(values));
+		return l;
 	}
 
 	@Override
 	public Long leftPushIfPresent(K key, V value) {
-		return this.mockJedis.lpushx(rawKey(key), rawValue(value));
+		long l = this.bridge.lpushx(rawKey(key), rawValue(value));
+		return l;
 	}
 
 	@Override
 	public Long leftPush(K key, V pivot, V value) {
-		return this.mockJedis.linsert(rawKey(key), LIST_POSITION.BEFORE, rawValue(pivot), rawValue(value));
+		long l = this.bridge.linsert(rawKey(key), DryRedisInsertOrder.BEFORE, rawValue(pivot), rawValue(value));
+		return l;
 	}
 
 	@Override
 	public Long rightPush(K key, V value) {
-		return this.mockJedis.rpush(rawKey(key), rawValue(value));
+		long l = this.bridge.rpush(rawKey(key), rawValue(value));
+		return l;
 	}
 
 	@Override
 	public Long rightPushAll(K key, V... values) {
-		return this.mockJedis.rpush(rawKey(key), asArray(values));
+		long l = this.bridge.rpush(rawKey(key), asList(values));
+		return l;
 	}
 
 	@Override
 	public Long rightPushAll(K key, Collection<V> values) {
-		return this.mockJedis.rpush(rawKey(key), asArray(values));
+		long l = this.bridge.rpush(rawKey(key), asList(values));
+		return l;
 	}
 
 	@Override
 	public Long rightPushIfPresent(K key, V value) {
-		return this.mockJedis.rpushx(rawKey(key), rawValue(value));
+		long l = this.bridge.rpushx(rawKey(key), rawValue(value));
+		return l;
 	}
 
 	@Override
 	public Long rightPush(K key, V pivot, V value) {
-		return this.mockJedis.linsert(rawKey(key), LIST_POSITION.AFTER, rawValue(pivot), rawValue(value));
+		long l = this.bridge.linsert(rawKey(key), DryRedisInsertOrder.AFTER, rawValue(pivot), rawValue(value));
+		return l;
 	}
 
 	@Override
 	public void set(K key, long index, V value) {
-		this.mockJedis.lset(rawKey(key), index, rawValue(value));
+		this.bridge.lset(rawKey(key), index, rawValue(value));
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public Long remove(K key, long count, Object value) {
+	    long l;
 		if(value instanceof byte[]) {
-			return this.mockJedis.lrem(rawKey(key), count, (byte[]) value);
+			l = this.bridge.lrem(rawKey(key), count, (byte[]) value);
 		}
 		
-		return this.mockJedis.lrem(rawKey(key), count, rawValue((V) value));
+		l = this.bridge.lrem(rawKey(key), count, rawValue((V) value));
+		return l;
 	}
 
 	@Override
 	public V index(K key, long index) {
-		return this.asValue(this.mockJedis.lindex(rawKey(key), index));
+		return this.asValue(this.bridge.lindex(rawKey(key), index));
 	}
 
 	@Override
 	public V leftPop(K key) {
-		return this.asValue(this.mockJedis.lpop(rawKey(key)));
+		return this.asValue(this.bridge.lpop(rawKey(key)));
 	}
 
 	@Override
 	public V leftPop(K key, long timeout, TimeUnit unit) {
-		List<V> values = this.asValuesList(this.mockJedis.blpop(this.asIntSeconds(timeout, unit), rawKey(key)));
-		if(values == null || values.isEmpty()) {
-			return null;
-		}
-		
-		return values.get(0);
+		return this.asValue(this.bridge.blpop(rawKey(key), this.asIntSeconds(timeout, unit)));
 	}
 
 	@Override
 	public V rightPop(K key) {
-		return this.asValue(this.mockJedis.rpop(rawKey(key)));
+		return this.asValue(this.bridge.rpop(rawKey(key)));
 	}
 
 	@Override
 	public V rightPop(K key, long timeout, TimeUnit unit) {
-		List<V> values = this.asValuesList(this.mockJedis.brpop(this.asIntSeconds(timeout, unit), rawKey(key)));
-		if(values == null || values.isEmpty()) {
-			return null;
-		}
-		
-		return values.get(0);
+		return this.asValue(this.bridge.brpop(rawKey(key), this.asIntSeconds(timeout, unit)));
 	}
 
 	@Override
 	public V rightPopAndLeftPush(K sourceKey, K destinationKey) {
-		return this.asValue(this.mockJedis.rpoplpush(rawKey(sourceKey), rawKey(destinationKey)));
+		return this.asValue(this.bridge.rpoplpush(rawKey(sourceKey), rawKey(destinationKey)));
 	}
 
 	@Override
 	public V rightPopAndLeftPush(K sourceKey, K destinationKey, long timeout, TimeUnit unit) {
-		return this.asValue(this.mockJedis.brpoplpush(rawKey(sourceKey), rawKey(destinationKey), this.asIntSeconds(timeout, unit)));
+		return this.asValue(this.bridge.brpoplpush(rawKey(sourceKey), rawKey(destinationKey), this.asIntSeconds(timeout, unit)));
 	}
 
 	@Override
