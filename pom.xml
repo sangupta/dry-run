@@ -80,7 +80,6 @@
             <groupId>com.github.sangupta</groupId>
             <artifactId>dry-redis</artifactId>
             <version>-SNAPSHOT</version>
-            <scope>provided</scope>
         </dependency>
     		
 		<!-- for gridfs template -->

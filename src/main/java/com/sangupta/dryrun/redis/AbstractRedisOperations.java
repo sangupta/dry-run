@@ -87,6 +87,10 @@ abstract class AbstractRedisOperations<K, V> {
 	}
 	
 	V asValue(String value) {
+	    if(value == null) {
+	        return null;
+	    }
+	    
 	    byte[] bytes = value.getBytes();
         return this.template.valueSerializer.deserialize(bytes);
     }
@@ -94,6 +98,10 @@ abstract class AbstractRedisOperations<K, V> {
 	List<V> asValuesList(List<String> bytes) {
 		List<V> result = new ArrayList<V>();
 		for(String str : bytes) {
+		    if(str == null) {
+		        continue;
+		    }
+		    
 		    byte[] bs = str.getBytes();
 			result.add(this.template.valueSerializer.deserialize(bs));
 		}
@@ -165,6 +173,10 @@ abstract class AbstractRedisOperations<K, V> {
         }
         
         for(String value : sdiff) {
+            if(value == null) {
+                continue;
+            }
+            
             byte[] bytes = value.getBytes();
             set.add(this.asValue(bytes));
         }

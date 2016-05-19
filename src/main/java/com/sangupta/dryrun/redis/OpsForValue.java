@@ -113,6 +113,10 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 			result = this.bridge.get(rawKey((K) key));
 		}
 		
+		if(result == null) {
+		    return null;
+		}
+		
 		byte[] bytes = result.getBytes();
 		return this.template.valueSerializer.deserialize(bytes);
 	}
@@ -120,6 +124,10 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 	@Override
 	public V getAndSet(K key, V value) {
 		String result = this.bridge.getset(rawKey(key), rawValue(value));
+		if(result == null) {
+            return null;
+        }
+		
 		byte[] bytes = result.getBytes();
 		return this.template.valueSerializer.deserialize(bytes);
 	}
@@ -152,6 +160,10 @@ class OpsForValue<K, V> extends AbstractRedisOperations<K, V> implements ValueOp
 	@Override
 	public String get(K key, long start, long end) {
 		String result = this.bridge.getrange(rawKey(key), start, end);
+		if(result == null) {
+            return null;
+        }
+		
 		byte[] bytes = result.getBytes();
 		return this.template.stringSerializer.deserialize(bytes);
 	}
