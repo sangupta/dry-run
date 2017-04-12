@@ -1,17 +1,27 @@
-dryrun
-======
+# dryrun
 
 [![Build Status](https://travis-ci.org/sangupta/dryrun.svg?branch=master)](https://travis-ci.org/sangupta/dryrun)
 [![Coverage Status](https://coveralls.io/repos/github/sangupta/dryrun/badge.svg?branch=master)](https://coveralls.io/github/sangupta/dryrun?branch=master)
 [![Maven Version](https://maven-badges.herokuapp.com/maven-central/com.sangupta/dryrun/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.sangupta/dryrun)
 
-**dryrun** is a collection of already-mocked classes that serve pretty useful during testing. For example
-unit testing code with `RedisTemplate` usually involves spinning a Redis instance. Our `DryRunRedisTemplate`
-uses the `MockJedis` framework to connect to an in-memory Redis, that connects via API calls and not via
-the usual connection.
+**dryrun** is a collection of already-mocked classes that aid in during unit-testing of Java code. 
 
-Features
---------
+For example unit testing code with `RedisTemplate` usually involves spinning a Redis instance. 
+Our `DryRunRedisTemplate` uses the `Dry-Redis` framework to connect to an in-memory Redis, that 
+connects uses pure Java method calls than running in an in-process server.
+
+## Available Mocks
+
+* MongoGridFSTempalte - to test Spring-data based Mongo GridFS code
+* RedisTemplate - to test Spring-data based Redis code 
+
+## Dependencies
+
+The library depends on the following external libraries to accomplish its goal:
+
+* Dry-Redis: in-memory Redis clone
+
+## Features
 
 * Mocked implementation to `RedisTemplate` using `MockJedis`. Following are supported:
   * Value operations
@@ -19,8 +29,9 @@ Features
   * Set operations except `sscan`
 * Mocked implementation to `GridFSTemplate` using in-memory storage.
 
-Usage
------
+## Examples
+
+### RedisTemplate testing
 
 To test code that uses `RedisTemplate` as a service, just inject the mocked template as:
 
@@ -51,8 +62,7 @@ MyTestableService service = new DefaultMyTestableServiceImpl();
 service.setRedisTemplate(redisTemplate);
 ```
 
-Downloads
----------
+## Downloads
 
 The library can be downloaded from Maven Central using:
 
@@ -64,16 +74,14 @@ The library can be downloaded from Maven Central using:
 </dependency>
 ```
 
-Release Notes
--------------
+## Release Notes
 
 **Development Snapshot**
 
 * Partial RedisTemplate methods
 * RedisTemplate.opsForValue() implemented completely
 
-Versioning
-----------
+## Semantic Versioning
 
 For transparency and insight into our release cycle, and for striving to maintain backward compatibility, 
 `dryrun` will be maintained under the Semantic Versioning guidelines as much as possible.
@@ -90,14 +98,13 @@ And constructed with the following guidelines:
 
 For more information on SemVer, please visit http://semver.org/.
 
-License
--------
+## License
 	
 ```
 dryrun - Mocked classes for unit testing
-Copyright (c) 2016, Sandeep Gupta
+Copyright (c) 2016-2017, Sandeep Gupta
 
-http://sangupta.com/projects/dryrun
+https://sangupta.com/projects/dryrun
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
