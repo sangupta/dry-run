@@ -56,6 +56,12 @@ The library depends on the following external libraries to accomplish its goal:
 
 * Dry-Redis: in-memory Redis clone
 
+The library is tested on the following JDK versions:
+
+* Oracle JDK 8
+* Oracle JDK 7
+* Open JDK 7
+
 ## Downloads
 
 The library can be downloaded from Maven Central using:
