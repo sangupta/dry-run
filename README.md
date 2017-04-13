@@ -10,17 +10,6 @@ For example unit testing code with `RedisTemplate` usually involves spinning a R
 Our `DryRunRedisTemplate` uses the `Dry-Redis` framework to connect to an in-memory Redis, that 
 connects uses pure Java method calls than running in an in-process server.
 
-## Available Mocks
-
-* MongoGridFSTempalte - to test Spring-data based Mongo GridFS code
-* RedisTemplate - to test Spring-data based Redis code 
-
-## Dependencies
-
-The library depends on the following external libraries to accomplish its goal:
-
-* Dry-Redis: in-memory Redis clone
-
 ## Features
 
 * Mocked implementation to `RedisTemplate` using `MockJedis`. Following are supported:
@@ -31,36 +20,41 @@ The library depends on the following external libraries to accomplish its goal:
 
 ## Examples
 
-### RedisTemplate testing
+### RedisTemplate
 
 To test code that uses `RedisTemplate` as a service, just inject the mocked template as:
 
 ```java
-// create a MockJedis instance
-MockJedis jedis = new MockJedis("mock-jedis");
+// create a DryRedis instance
+DryRedis dryRedis = DryRedis.getDatabase("testdb");
 
 // create an instance of RedisTemplate
-RedisTemplate<String, byte[]> template = new DryRunRedisTemplate<String, byte[]>(jedis);
+RedisTemplate<String, byte[]> template = new DryRunRedisTemplate<String, byte[]>(dryRedis);
 
 // must specify the key and value serializers
 template.setKeySerializer(new StringRedisSerializer());
-template.setValueSerializer(new RedisSerializer<byte[]>() {
+template.setValueSerializer(new StringRedisSerializer());
 
-	@Override
-	public byte[] serialize(byte[] t) throws SerializationException {
-		return t;
-	}
-
-	@Override
-	public byte[] deserialize(byte[] bytes) throws SerializationException {
-		return bytes;
-	}
-});
-
-// inject in your service
+// inject in your service for unit testing
 MyTestableService service = new DefaultMyTestableServiceImpl();
 service.setRedisTemplate(redisTemplate);
 ```
+
+### GridFSTemplate
+
+```java
+// create a new in-memory GridFSTemplate
+GridFSTemplate template = new DryRunGridFSTemplate("myBucket");
+
+// start using it
+template.store(stream, "myfile.txt"); 
+```
+
+## Dependencies
+
+The library depends on the following external libraries to accomplish its goal:
+
+* Dry-Redis: in-memory Redis clone
 
 ## Downloads
 
